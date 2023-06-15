@@ -1,62 +1,24 @@
-
-#extension GL_OES_standard_derivatives : enable
-
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-varying vec4 v_position;
-varying vec4 v_normal;
-varying vec2 v_texcoord;
-varying vec4 v_color;
-
-uniform mat4 u_projectionMatrix;
-uniform mat4 u_modelViewMatrix;
-uniform mat4 u_normalMatrix;
-uniform vec2 u_resolution;
-uniform float u_time;
-
-#if defined(VERTEX)
-
-// attribute vec4 a_position; // myfolder/myfile.obj
-attribute vec4 a_position;
-attribute vec4 a_normal;
-attribute vec2 a_texcoord;
-attribute vec4 a_color;
-
-void main(void) {
-	v_position = u_projectionMatrix * u_modelViewMatrix * a_position;
-	v_normal = u_normalMatrix * a_normal;
-	v_texcoord = a_texcoord;
-	v_color = a_color;
-	gl_Position = v_position;
-}
-
-#else // fragment shader
-
-uniform vec2 u_mouse;
-uniform vec2 u_pos;
-// uniform sampler2D u_texture; // https://cdn.jsdelivr.net/gh/actarian/plausible-brdf-shader/textures/mars/4096x2048/diffuse.jpg?repeat=true
-// uniform vec2 u_textureResolution;
-
-float checker(vec2 uv, float repeats) {
-	float cx = floor(repeats * uv.x);
-	float cy = floor(repeats * uv.y);
-	float result = mod(cx + cy, 2.0);
-	return sign(result);
-}
-
 void main() {
-	vec2 p = v_texcoord;
+  float time = iGlobalTime * 1.0;
+  vec2 uv = (gl_FragCoord.yx / iResolution.xx - 0.5) * 10.0;
+  vec2 uv0 = uv;
+  float i0 = 1.0;
+  float i1 = 1.0;
+  float i2 = 1.0;
+  float i4 = 0.0;
+  for (int s = 0; s < 7; s++) {
+    vec2 r;
+    r = vec2(cos(uv.y * i0 - i4 + time / i1), sin(uv.x * i0 - i4 + time / i1)) / i2;
+    r += vec2(-r.y, r.x) * 0.3;
+    uv.xy += r;
 
-	vec3 ambient = vec3(0.4);
-	vec3 direction = vec3(0.0, 1.0, 1.0);
-	vec3 lightColor = vec3(1.0);
-	float incidence = max(dot(v_normal.xyz, direction), - 1.0);
-	vec3 light = clamp(ambient + lightColor * incidence, 0.0, 1.0);
-
-	vec3 color = (0.2 * checker(p, 8.0) + v_normal.rgb);
-	gl_FragColor = vec4(color * light, 1.0);
+    i0 *= 1.93;
+    i1 *= 1.15;
+    i2 *= 1.7;
+    i4 += 0.05 + 0.1 * time * i1;
+  }
+  float r = sin(uv.x - time) * 0.5 + 0.5;
+  float b = sin(uv.y + time) * 0.5 + 0.5;
+  float g = sin((uv.x + uv.y + sin(time * 0.5)) * 0.5) * 0.5 + 0.5;
+  gl_FragColor = vec4(uv, 0, 0);
 }
-
-#endif
